@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ashxme Pay</title>
+  <style>
+    body { margin: 0; font-family: 'Inter', -apple-system, Arial, sans-serif; background: #f5f6f5; min-height: 100vh; overscroll-behavior: none; }
+    .container { max-width: 400px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
+    .search-bar { background: white; border-radius: 30px; padding: 10px 15px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .search-bar input { flex: 1; border: none; outline: none; font-size: 14px; }
+    .search-bar i { color: gray; margin-right: 10px; }
+    .bank-section { background: #e8f0fe; border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 20px; }
+    .bank-section h2 { font-size: 20px; margin: 0 0 5px; }
+    .bank-section p { font-size: 14px; margin: 0 0 10px; }
+    .wallet-balance { font-size: 24px; font-weight: 700; color: #0066ff; margin: 0; }
+    .add-money-btn { background: #0066ff; color: white; border: none; border-radius: 30px; padding: 10px 20px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    .options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .option { text-align: center; cursor: pointer; }
+    .option div { background: #e8f0fe; border-radius: 10px; padding: 15px; margin-bottom: 5px; transition: transform 0.2s; }
+    .option div:hover { transform: scale(1.05); }
+    .option p { font-size: 12px; margin: 0; color: #333; }
+    .payment-history-section { margin-bottom: 20px; }
+    .payment-history-section h3 { font-size: 18px; margin: 0 0 10px; }
+    .payment-history { background: white; border-radius: 10px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .payment-history ul { list-style: none; padding: 0; margin: 0; }
+    .payment-history ul li { font-size: 14px; color: #555; margin-bottom: 5px; }
+    .history-section { display: none; margin-top: 20px; }
+    .history-section h2 { font-size: 18px; color: #1a1a1a; font-weight: 600; }
+    .history-list { list-style: none; padding: 0; }
+    .history-list li { background: #fff; padding: 10px; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 13px; color: #333; }
+    #qr-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    #qr-scanner { width: 90%; max-width: 300px; border-radius: 12px; position: relative; aspect-ratio: 1/1; }
+    #highlight { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 80%; height: 80%; border: 3px solid #00ff00; border-radius: 12px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+    #close-btn { position: absolute; top: 10px; right: 10px; background: #ff3333; color: #fff; border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; touch-action: manipulation; }
+    #upi-qr-section { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 999; }
+    #upi-qr-section canvas { width: 200px; height: 200px; margin-bottom: 15px; border: 4px solid #fff; border-radius: 8px; }
+    #upi-qr-section p { color: #fff; font-size: 16px; font-weight: 500; }
+    .recharge-section { display: none; margin-top: 20px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .recharge-plan { background: #e8f0fe; border-radius: 10px; padding: 10px; margin-bottom: 10px; text-align: center; }
+    .recharge-plan h4 { margin: 0 0 5px; }
+    .recharge-plan p { margin: 0; color: #0066ff; font-weight: bold; }
+    .popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 1001; display: none; text-align: center; max-width: 90%; width: 300px; }
+    .popup p { font-size: 15px; color: #333; margin: 0 0 15px; }
+    .popup button { padding: 10px 20px; border: none; border-radius: 8px; background: #0066ff; color: #fff; font-size: 14px; cursor: pointer; touch-action: manipulation; }
+    .popup button:hover { background: #0055cc; }
+    .send-section { display: none; margin-top: 20px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .send-section input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    .send-section button { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #00cc44; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; touch-action: manipulation; }
+    .send-section button:hover { background: #00b33c; }
+    .bank-transfer-section { display: none; margin-top: 20px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .bank-transfer-section input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    .bank-transfer-section button { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #00cc44; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; touch-action: manipulation; }
+    .bank-transfer-section button:hover { background: #00b33c; }
+    @media (max-width: 400px) {
+      .container { padding: 8px; }
+      .bank-section { padding: 10px; }
+      .options { grid-template-columns: repeat(2, 1fr); }
+      .option div { padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="search-bar">
+      <i class="fa fa-search"></i>
+      <input type="text" id="search-input" placeholder="Pay friends and merchants" oninput="showHistoryOnSearch()">
+    </div>
+    <div class="bank-section">
+      <h2>Start with Ashxme Pay</h2>
+      <p>Send and receive money securely</p>
+      <div class="wallet-balance" id="wallet-balance">₹ 1000.00</div>
+      <button class="add-money-btn" onclick="showUPIQR()">Add Money</button>
+    </div>
+    <div class="options">
+      <div class="option" onclick="openQRScanner()">
+        <div><i class="fa fa-qrcode"></i></div>
+        <p>Scan</p>
+      </div>
+      <div class="option" onclick="showSendSection()">
+        <div><i class="fa fa-rupee-sign"></i></div>
+        <p>Pay</p>
+      </div>
+      <div class="option" onclick="showBankTransferSection()">
+        <div><i class="fa fa-university"></i></div>
+        <p>Bank Transfer</p>
+      </div>
+      <div class="option" onclick="showRechargeSection()">
+        <div><i class="fa fa-mobile-alt"></i></div>
+        <p>Recharge</p>
+      </div>
+    </div>
+    <div class="payment-history-section">
+      <h3>Payment History</h3>
+      <div class="payment-history">
+        <ul id="payment-history-list">
+          <li>कोई हालिया पेमेंट नहीं</li>
+        </ul>
+      </div>
+    </div>
+    <div class="history-section" id="history-section">
+      <h2>ट्रांजेक्शन हिस्ट्री</h2>
+      <ul class="history-list" id="history-list">
+        <li>कोई हालिया ट्रांजेक्शन नहीं</li>
+      </ul>
+    </div>
+    <div class="send-section" id="send-section">
+      <div id="receiver-details" style="display:none; font-size: 14px; color: #333; margin-bottom: 10px;"></div>
+      <input type="text" id="send-upi" placeholder="मोबाइल नंबर या UPI ID">
+      <input type="number" id="send-amount" placeholder="राशि ₹">
+      <button onclick="sendMoney()">भेजें</button>
+    </div>
+    <div class="bank-transfer-section" id="bank-transfer-section">
+      <input type="text" id="bank-account" placeholder="बैंक अकाउंट नंबर">
+      <input type="text" id="ifsc" placeholder="IFSC कोड">
+      <input type="number" id="transfer-amount" placeholder="राशि ₹">
+      <button onclick="fakeBankTransfer()">ट्रांसफर करें</button>
+    </div>
+    <div class="recharge-section" id="recharge-section">
+      <div class="recharge-plan">
+        <h4>₹749 for 84 Days</h4>
+        <p>₹524.3 (30% off)</p>
+      </div>
+      <div class="recharge-plan">
+        <h4>₹799 for 84 Days</h4>
+        <p>₹399.5 (50% off)</p>
+      </div>
+      <div class="recharge-plan">
+        <h4>₹1029 for 84 Days</h4>
+        <p>₹617.4 (40% off)</p>
+      </div>
+      <button onclick="hideRechargeSection()">बंद करें</button>
+    </div>
+  </div>
+
+  <!-- QR Scanner Overlay -->
+  <div id="qr-overlay" style="display: none;">
+    <button id="close-btn">बंद करें</button>
+    <div id="qr-scanner"></div>
+  </div>
+
+  <!-- UPI QR Code Section -->
+  <div id="upi-qr-section" style="display: none;">
+    <canvas id="upi-qr"></canvas>
+    <p>QR वैध: <span id="timer">05:00</span> ⌛</p>
+  </div>
+
+  <!-- Popup for Messages -->
+  <div class="popup" id="popup" style="display: none;">
+    <p id="popup-message"></p>
+    <button onclick="closePopup()">ठीक है</button>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <script defer>
+    console.log('Script started');
+
+    // Global Variables
+    let walletBalance = parseFloat(localStorage.getItem('walletBalance')) || 1000.00;
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    let html5QrCode = null;
+
+    // UI Functions
+    function showSendSection() {
+      document.getElementById('send-section').style.display = 'block';
+    }
+
+    function showBankTransferSection() {
+      document.getElementById('bank-transfer-section').style.display = 'block';
+    }
+
+    function showRechargeSection() {
+      document.getElementById('recharge-section').style.display = 'block';
+    }
+
+    function hideRechargeSection() {
+      document.getElementById('recharge-section').style.display = 'none';
+    }
+
+    function showPopup(message) {
+      const popup = document.getElementById('popup');
+      if (popup) {
+        document.getElementById('popup-message').innerText = message;
+        popup.style.display = 'block';
+      }
+    }
+
+    function closePopup() {
+      const popup = document.getElementById('popup');
+      if (popup) {
+        popup.style.display = 'none';
+      }
+    }
+
+    // Update Wallet Balance
+    function updateWalletBalance() {
+      localStorage.setItem('walletBalance', walletBalance);
+      const balanceElement = document.getElementById('wallet-balance');
+      if (balanceElement) {
+        balanceElement.innerText = `₹ ${walletBalance.toFixed(2)}`;
+      }
+    }
+
+    // Render History
+    function renderHistory() {
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+      const list = document.getElementById('history-list');
+      if (list) {
+        list.innerHTML = transactions.length === 0 ? '<li>कोई हालिया ट्रांजेक्शन नहीं</li>' : '';
+        transactions.forEach(tx => {
+          const li = document.createElement('li');
+          li.textContent = `${tx.date}: ${tx.type === 'debit' ? '₹' + tx.amount + ' भेजा गया' : '₹' + tx.amount + ' जोड़ा गया'} ${tx.receiverName} (${tx.upiId})`;
+          list.appendChild(li);
+        });
+      }
+    }
+
+    // Render Payment History
+    function renderPaymentHistory() {
+      const list = document.getElementById('payment-history-list');
+      if (list) {
+        list.innerHTML = transactions.length === 0 ? '<li>कोई हालिया पेमेंट नहीं</li>' : '';
+        transactions.forEach(tx => {
+          const li = document.createElement('li');
+          li.textContent = `${tx.date}: ${tx.type === 'debit' ? '₹' + tx.amount + ' भेजा गया' : '₹' + tx.amount + ' जोड़ा गया'} ${tx.receiverName} (${tx.upiId})`;
+          list.appendChild(li);
+        });
+      }
+    }
+
+    // Send Money
+    function sendMoney() {
+      const upi = document.getElementById('send-upi').value.trim();
+      const amount = parseFloat(document.getElementById('send-amount').value);
+      const receiverDetails = document.getElementById('receiver-details');
+      const receiverName = receiverDetails ? receiverDetails.innerText.split('\n')[0]?.replace('रिसीवर: ', '') || 'अज्ञात' : 'अज्ञात';
+
+      if (!upi || isNaN(amount) || amount <= 0 || amount > walletBalance) {
+        showPopup('सही UPI ID और राशि डालें।');
+        return;
+      }
+
+      walletBalance -= amount;
+      updateWalletBalance();
+      transactions.push({
+        type: 'debit',
+        amount: amount,
+        upiId: upi,
+        receiverName: receiverName,
+        date: new Date().toLocaleString('hi-IN')
+      });
+      renderHistory();
+      renderPaymentHistory();
+      showPopup(`₹${amount} सफलतापूर्वक ${receiverName} (${upi}) को भेजा गया`);
+      document.getElementById('send-upi').value = '';
+      document.getElementById('send-amount').value = '';
+      if (receiverDetails) receiverDetails.style.display = 'none';
+      document.getElementById('send-section').style.display = 'none';
+    }
+
+    // Fake Bank Transfer
+    function fakeBankTransfer() {
+      const account = document.getElementById('bank-account').value.trim();
+      const ifsc = document.getElementById('ifsc').value.trim();
+      const amount = parseFloat(document.getElementById('transfer-amount').value);
+
+      if (!account || !ifsc || isNaN(amount) || amount <= 0 || amount > walletBalance) {
+        showPopup('सही बैंक डिटेल्स और राशि डालें।');
+        return;
+      }
+
+      walletBalance -= amount;
+      updateWalletBalance();
+      transactions.push({
+        type: 'debit',
+        amount: amount,
+        upiId: account,
+        receiverName: 'बैंक ट्रांसफर',
+        date: new Date().toLocaleString('hi-IN')
+      });
+      renderHistory();
+      renderPaymentHistory();
+      showPopup(`₹${amount} बैंक ट्रांसफर सफल!`);
+      document.getElementById('bank-account').value = '';
+      document.getElementById('ifsc').value = '';
+      document.getElementById('transfer-amount').value = '';
+      document.getElementById('bank-transfer-section').style.display = 'none';
+    }
+
+    // Show History on Search
+    function showHistoryOnSearch() {
+      const query = document.getElementById('search-input').value.trim().toLowerCase();
+      const historySection = document.getElementById('history-section');
+      if (query && query.includes('history')) {
+        historySection.style.display = 'block';
+      } else {
+        historySection.style.display = 'none';
+      }
+    }
+
+    // QR Scanner
+    function openQRScanner() {
+      if (!window.Html5Qrcode) {
+        showPopup('QR स्कैनर लोड नहीं हुआ।');
+        return;
+      }
+      document.getElementById('qr-overlay').style.display = 'flex';
+      if (html5QrCode) {
+        html5QrCode.stop().catch(() => {});
+        html5QrCode = null;
+      }
+      html5QrCode = new Html5Qrcode('qr-scanner');
+      try {
+        Html5Qrcode.getCameras().then(devices => {
+          if (devices && devices.length) {
+            const backCam = devices.find(cam => cam.label.toLowerCase().includes('back')) || devices[0];
+            html5QrCode.start(
+              backCam.id,
+              { fps: 10, qrbox: { width: 200, height: 200 } },
+              (qrCodeMessage) => {
+                let upiId = qrCodeMessage;
+                let receiverName = 'Ashxme Pay User';
+                try {
+                  const url = new URL(qrCodeMessage);
+                  upiId = url.searchParams.get('pa') || qrCodeMessage;
+                  receiverName = url.searchParams.get('pn') || 'Ashxme Pay User';
+                } catch (e) {
+                  console.log('Not a URL, using raw QR data');
+                }
+                const sendUpi = document.getElementById('send-upi');
+                if (sendUpi) sendUpi.value = upiId;
+                const sendSection = document.getElementById('send-section');
+                if (sendSection) sendSection.style.display = 'block';
+                const receiverDetails = document.getElementById('receiver-details');
+                if (receiverDetails) {
+                  receiverDetails.style.display = 'block';
+                  receiverDetails.innerText = `रिसीवर: ${receiverName}\nUPI: ${upiId}`;
+                }
+                if (html5QrCode) html5QrCode.stop().catch(() => {});
+                document.getElementById('qr-overlay').style.display = 'none';
+              },
+              () => {}
+            ).catch(err => {
+              showPopup('QR स्कैन में त्रुटि: ' + err);
+              document.getElementById('qr-overlay').style.display = 'none';
+            });
+          } else {
+            showPopup('कैमरा नहीं मिला! कृपया अनुमति दें।');
+            document.getElementById('qr-overlay').style.display = 'none';
+          }
+        }).catch(err => {
+          showPopup('कैमरा एक्सेस में त्रुटि: ' + err);
+          document.getElementById('qr-overlay').style.display = 'none';
+        });
+      } catch (err) {
+        showPopup('कैमरा एक्सेस में त्रुटि: ' + err);
+        document.getElementById('qr-overlay').style.display = 'none';
+      }
+    }
+
+    const closeBtn = document.getElementById('close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        if (html5QrCode) {
+          html5QrCode.stop().catch(() => {});
+          html5QrCode = null;
+        }
+        document.getElementById('qr-overlay').style.display = 'none';
+      });
+    } else {
+      console.error('Close button not found');
+    }
+
+    // UPI QR Code
+    function showUPIQR() {
+      if (!window.QRCode) {
+        showPopup('QR कोड लाइब्रेरी लोड नहीं हुई।');
+        return;
+      }
+      const upiId = '9302997785@ybl';
+      document.getElementById('upi-qr-section').style.display = 'flex';
+      QRCode.toCanvas(document.getElementById('upi-qr'), `upi://pay?pa=${upiId}&pn=Ashxme Pay User&cu=INR`, { width: 200 }, (err) => {
+        if (err) {
+          console.error('QR Code generation failed:', err);
+          showPopup('QR कोड बनाने में त्रुटि।');
+        }
+      });
+      let timer = 300;
+      const timerElement = document.getElementById('timer');
+      if (timerElement) {
+        const interval = setInterval(() => {
+          let min = Math.floor(timer / 60);
+          let sec = timer % 60;
+          timerElement.innerText = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+          timer--;
+          if (timer < 0) {
+            clearInterval(interval);
+            document.getElementById('upi-qr-section').style.display = 'none';
+          }
+        }, 1000);
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM loaded');
+      updateWalletBalance();
+      renderHistory();
+      renderPaymentHistory();
+      document.getElementById('loading').style.display = 'none';
+    });
+  </script>
+</body>
+</html>
